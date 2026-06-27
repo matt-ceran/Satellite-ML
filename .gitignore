@@ -1,0 +1,30 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+.venv/
+venv/
+.env
+
+.DS_Store
+
+# Local-only Codex/user memory. Do not commit or push.
+memory/
+
+# Data and generated artifacts stay local.
+data/raw/*
+data/processed/*
+models/*
+reports/*
+
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+!models/.gitkeep
+!reports/.gitkeep
+
+# Extra checkpoint/artifact patterns.
+*.pt
+*.pth
+*.onnx
