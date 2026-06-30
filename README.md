@@ -103,6 +103,21 @@ Evaluation prints validation accuracy, per-class accuracy, and a confusion
 matrix. The confusion matrix uses rows as true classes and columns as predicted
 classes.
 
+It also saves:
+
+```text
+reports/confusion_matrix.png
+reports/per_class_accuracy.csv
+```
+
+## Plot Training History
+
+```bash
+python -m src.plot_history --history-csv reports/training_history.csv --output reports/learning_curves.png
+```
+
+This turns the epoch-by-epoch training history into accuracy and loss curves.
+
 ## Predict One Image
 
 ```bash
@@ -114,6 +129,38 @@ For example:
 ```bash
 python -m src.predict --image data/raw/EuroSAT_RGB/Forest/Forest_1.jpg --checkpoint models/eurosat_cnn.pt
 ```
+
+## Predict A Batch Of Images
+
+```bash
+python -m src.predict_batch --data-dir data/raw/EuroSAT_RGB --checkpoint models/eurosat_cnn.pt --samples-per-class 20
+```
+
+This writes:
+
+```text
+reports/prediction_samples.csv
+reports/prediction_samples_summary.txt
+```
+
+The CSV is useful for finding individual images the model misses.
+
+## Create A Future Train/Validation/Test Split Manifest
+
+```bash
+python -m src.create_splits --data-dir data/raw/EuroSAT_RGB --val-split 0.15 --test-split 0.10 --seed 42
+```
+
+This writes a deterministic class-balanced manifest:
+
+```text
+reports/split_manifest.csv
+reports/split_summary.csv
+```
+
+The current baseline checkpoint was trained with the original train/validation
+split. This manifest is for the next training phase where a final test set should
+be held out before training starts.
 
 ## Learning Notes
 

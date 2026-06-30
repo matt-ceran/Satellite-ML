@@ -7,6 +7,7 @@ from torch import nn
 from .config import CLASS_NAMES, DEFAULT_CHECKPOINT, NUM_CLASSES
 from .dataset import make_dataloaders
 from .model import build_model
+from .reporting import save_confusion_matrix_image, save_per_class_accuracy_csv
 from .utils import get_device, load_checkpoint, set_seed
 
 
@@ -44,6 +45,16 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--val-split", type=float, default=0.2)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--num-workers", type=int, default=0)
+    parser.add_argument(
+        "--confusion-matrix-image",
+        type=Path,
+        default=Path("reports/confusion_matrix.png"),
+    )
+    parser.add_argument(
+        "--per-class-csv",
+        type=Path,
+        default=Path("reports/per_class_accuracy.csv"),
+    )
     parser.add_argument("--smoke-test", action="store_true")
     return parser.parse_args()
 
@@ -82,6 +93,13 @@ def main() -> None:
 
     print("Confusion matrix rows=true cols=pred:")
     print(confusion.tolist())
+
+    confusion_rows = confusion.tolist()
+    per_class_rows = per_class_accuracy.tolist()
+    save_confusion_matrix_image(confusion_rows, class_names, args.confusion_matrix_image)
+    save_per_class_accuracy_csv(class_names, per_class_rows, confusion_rows, args.per_class_csv)
+    print(f"Confusion matrix image: {args.confusion_matrix_image}")
+    print(f"Per-class CSV: {args.per_class_csv}")
 
 
 if __name__ == "__main__":
