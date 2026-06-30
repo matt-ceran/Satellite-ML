@@ -10,7 +10,7 @@ venv/
 
 .DS_Store
 
-# Local-only Codex/user memory. Do not commit or push.
+# Local project notes stay local.
 memory/
 
 # Data and generated artifacts stay local.

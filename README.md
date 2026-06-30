@@ -201,4 +201,4 @@ computes gradients, and Adam updates the weights. Validation data is kept
 separate so you can see whether the model is learning patterns that generalize
 beyond the training images.
 
-Generated data, checkpoints, reports, and local Codex memory are ignored by git.
+Generated data, checkpoints, and reports are ignored by git.
