@@ -4,9 +4,9 @@ from pathlib import Path
 import torch
 from torch import nn
 
-from .config import CLASS_NAMES, DEFAULT_CHECKPOINT, NUM_CLASSES
+from .config import CLASS_NAMES, DEFAULT_MODEL_NAME, NUM_CLASSES, default_checkpoint_for_model
 from .dataset import make_dataloaders
-from .model import build_model
+from .model import MODEL_NAMES, build_model
 from .reporting import save_confusion_matrix_image, save_per_class_accuracy_csv
 from .utils import get_device, load_checkpoint, set_seed
 
@@ -40,7 +40,8 @@ def evaluate(model, loader, criterion, device, num_classes: int):
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Evaluate a saved EuroSAT CNN checkpoint.")
     parser.add_argument("--data-dir", type=Path, default=Path("data/raw/EuroSAT_RGB"))
-    parser.add_argument("--checkpoint", type=Path, default=DEFAULT_CHECKPOINT)
+    parser.add_argument("--model", choices=MODEL_NAMES)
+    parser.add_argument("--checkpoint", type=Path)
     parser.add_argument("--batch-size", type=int, default=64)
     parser.add_argument("--val-split", type=float, default=0.2)
     parser.add_argument("--seed", type=int, default=42)
@@ -73,9 +74,11 @@ def main() -> None:
         smoke_test=args.smoke_test,
     )
 
-    checkpoint = load_checkpoint(args.checkpoint, device)
+    checkpoint_path = args.checkpoint or default_checkpoint_for_model(args.model or DEFAULT_MODEL_NAME)
+    checkpoint = load_checkpoint(checkpoint_path, device)
+    model_name = args.model or checkpoint.get("model_name", DEFAULT_MODEL_NAME)
     class_names = checkpoint.get("class_names", data_class_names or CLASS_NAMES)
-    model = build_model(num_classes=len(class_names)).to(device)
+    model = build_model(num_classes=len(class_names), model_name=model_name).to(device)
     model.load_state_dict(checkpoint["model_state_dict"])
 
     criterion = nn.CrossEntropyLoss()
@@ -85,6 +88,8 @@ def main() -> None:
 
     print(f"Validation loss: {val_loss:.4f}")
     print(f"Validation accuracy: {val_accuracy:.4f}")
+    print(f"Model: {model_name}")
+    print(f"Checkpoint: {checkpoint_path}")
     print("Per-class accuracy:")
     for index, name in enumerate(class_names):
         correct = confusion[index, index].item()

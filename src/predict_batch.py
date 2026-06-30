@@ -7,9 +7,9 @@ from pathlib import Path
 import torch
 from PIL import Image
 
-from .config import CLASS_NAMES, DEFAULT_CHECKPOINT
+from .config import CLASS_NAMES, DEFAULT_MODEL_NAME, default_checkpoint_for_model
 from .dataset import build_transforms
-from .model import build_model
+from .model import MODEL_NAMES, build_model
 from .utils import get_device, load_checkpoint
 
 
@@ -19,7 +19,8 @@ IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png"}
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run prediction on a deterministic sample from each class.")
     parser.add_argument("--data-dir", type=Path, default=Path("data/raw/EuroSAT_RGB"))
-    parser.add_argument("--checkpoint", type=Path, default=DEFAULT_CHECKPOINT)
+    parser.add_argument("--model", choices=MODEL_NAMES)
+    parser.add_argument("--checkpoint", type=Path)
     parser.add_argument("--samples-per-class", type=int, default=20)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--output-csv", type=Path, default=Path("reports/prediction_samples.csv"))
@@ -80,10 +81,12 @@ def write_summary(rows: list[dict[str, str]], summary_path: Path) -> None:
 def main() -> None:
     args = parse_args()
     device = get_device()
-    checkpoint = load_checkpoint(args.checkpoint, device)
+    checkpoint_path = args.checkpoint or default_checkpoint_for_model(args.model or DEFAULT_MODEL_NAME)
+    checkpoint = load_checkpoint(checkpoint_path, device)
+    model_name = args.model or checkpoint.get("model_name", DEFAULT_MODEL_NAME)
     class_names = checkpoint.get("class_names", CLASS_NAMES)
 
-    model = build_model(num_classes=len(class_names)).to(device)
+    model = build_model(num_classes=len(class_names), model_name=model_name).to(device)
     model.load_state_dict(checkpoint["model_state_dict"])
     model.eval()
     transform = build_transforms(train=False)
@@ -115,6 +118,8 @@ def main() -> None:
     correct = sum(row["correct"] == "1" for row in rows)
     print(f"Prediction CSV: {args.output_csv}")
     print(f"Prediction summary: {args.summary}")
+    print(f"Model: {model_name}")
+    print(f"Checkpoint: {checkpoint_path}")
     print(f"Accuracy: {correct}/{len(rows)} ({correct / len(rows):.4f})")
 
 

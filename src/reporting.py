@@ -110,7 +110,12 @@ def load_training_history(path: Path) -> list[dict[str, float]]:
         ]
 
 
-def save_learning_curves(history: list[dict[str, float]], output_path: Path) -> None:
+def save_learning_curves(
+    history: list[dict[str, float]],
+    output_path: Path,
+    title: str = "EuroSAT CNN Learning Curves",
+    subtitle: str = "Training and validation metrics from reports/training_history.csv",
+) -> None:
     if not history:
         raise ValueError("Training history is empty.")
 
@@ -121,13 +126,8 @@ def save_learning_curves(history: list[dict[str, float]], output_path: Path) -> 
 
     title_font = _font(32, bold=True)
     body_font = _font(16)
-    draw.text((50, 30), "EuroSAT CNN Learning Curves", fill=TEXT, font=title_font)
-    draw.text(
-        (50, 75),
-        "Training and validation metrics from reports/training_history.csv",
-        fill=MUTED,
-        font=body_font,
-    )
+    draw.text((50, 30), title, fill=TEXT, font=title_font)
+    draw.text((50, 75), subtitle, fill=MUTED, font=body_font)
 
     epochs = [int(row["epoch"]) for row in history]
     train_acc = [row["train_accuracy"] for row in history]

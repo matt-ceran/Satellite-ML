@@ -4,9 +4,9 @@ from pathlib import Path
 import torch
 from torch import nn
 
-from .config import DEFAULT_CHECKPOINT, DEFAULT_HISTORY_CSV
+from .config import DEFAULT_MODEL_NAME, default_checkpoint_for_model, default_history_for_model
 from .dataset import make_dataloaders
-from .model import build_model
+from .model import MODEL_NAMES, build_model
 from .utils import accuracy_from_logits, get_device, save_history_csv, set_seed
 
 
@@ -58,14 +58,16 @@ def run_eval_epoch(model, loader, criterion, device) -> tuple[float, float]:
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Train a small CNN on EuroSAT RGB.")
     parser.add_argument("--data-dir", type=Path, default=Path("data/raw/EuroSAT_RGB"))
+    parser.add_argument("--model", choices=MODEL_NAMES, default=DEFAULT_MODEL_NAME)
     parser.add_argument("--epochs", type=int, default=20)
     parser.add_argument("--batch-size", type=int, default=64)
     parser.add_argument("--lr", type=float, default=0.001)
+    parser.add_argument("--weight-decay", type=float, default=0.0)
     parser.add_argument("--val-split", type=float, default=0.2)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--num-workers", type=int, default=0)
-    parser.add_argument("--checkpoint", type=Path, default=DEFAULT_CHECKPOINT)
-    parser.add_argument("--history-csv", type=Path, default=DEFAULT_HISTORY_CSV)
+    parser.add_argument("--checkpoint", type=Path)
+    parser.add_argument("--history-csv", type=Path)
     parser.add_argument("--smoke-test", action="store_true")
     return parser.parse_args()
 
@@ -84,15 +86,19 @@ def main() -> None:
         smoke_test=args.smoke_test,
     )
 
-    model = build_model(num_classes=len(class_names)).to(device)
+    checkpoint_path = args.checkpoint or default_checkpoint_for_model(args.model)
+    history_csv = args.history_csv or default_history_for_model(args.model)
+
+    model = build_model(num_classes=len(class_names), model_name=args.model).to(device)
     criterion = nn.CrossEntropyLoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
+    optimizer = torch.optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
 
     best_val_acc = -1.0
     history: list[dict[str, float]] = []
-    args.checkpoint.parent.mkdir(parents=True, exist_ok=True)
+    checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
 
     print(f"Device: {device}")
+    print(f"Model: {args.model}")
     print(f"Classes: {class_names}")
 
     for epoch in range(1, args.epochs + 1):
@@ -119,16 +125,17 @@ def main() -> None:
             torch.save(
                 {
                     "model_state_dict": model.state_dict(),
+                    "model_name": args.model,
                     "class_names": class_names,
                     "epoch": epoch,
                     "val_accuracy": val_acc,
                 },
-                args.checkpoint,
+                checkpoint_path,
             )
 
-    save_history_csv(history, args.history_csv)
-    print(f"Best checkpoint: {args.checkpoint} (val accuracy {best_val_acc:.3f})")
-    print(f"Training history: {args.history_csv}")
+    save_history_csv(history, history_csv)
+    print(f"Best checkpoint: {checkpoint_path} (val accuracy {best_val_acc:.3f})")
+    print(f"Training history: {history_csv}")
 
 
 if __name__ == "__main__":

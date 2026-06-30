@@ -93,6 +93,23 @@ What happens:
 5. The best validation checkpoint is saved to `models/eurosat_cnn.pt`.
 6. Epoch metrics are saved to `reports/training_history.csv`.
 
+## Train The Improved From-Scratch CNN
+
+```bash
+python -m src.train --model improved --data-dir data/raw/EuroSAT_RGB --epochs 20 --batch-size 64 --lr 0.001 --weight-decay 0.0001
+```
+
+This trains a stronger CNN from scratch and saves:
+
+```text
+models/eurosat_improved_cnn.pt
+reports/improved_training_history.csv
+```
+
+The improved model uses BatchNorm, more convolution filters, an extra
+convolution block, dropout, and global average pooling. It should be compared
+against the small CNN baseline instead of overwriting it.
+
 ## Evaluate
 
 ```bash
@@ -161,6 +178,20 @@ reports/split_summary.csv
 The current baseline checkpoint was trained with the original train/validation
 split. This manifest is for the next training phase where a final test set should
 be held out before training starts.
+
+## Compare Baseline And Improved Reports
+
+```bash
+python -m src.compare_experiments
+```
+
+This compares baseline and improved histories, per-class accuracy, and sampled
+prediction summaries. It writes:
+
+```text
+reports/phase_2b_comparison.csv
+reports/phase_2b_comparison.md
+```
 
 ## Learning Notes
 
